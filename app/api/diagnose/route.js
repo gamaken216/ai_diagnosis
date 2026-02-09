@@ -3,7 +3,7 @@ export async function POST(request) {
 
   if (!apiKey) {
     return Response.json(
-      { error: "API key not configured" },
+      { error: "API key not configured. Please set ANTHROPIC_API_KEY in Vercel environment variables." },
       { status: 500 }
     );
   }
@@ -52,9 +52,8 @@ export async function POST(request) {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error("Anthropic API error:", errorData);
       return Response.json(
-        { error: "AI diagnosis failed" },
+        { error: "Anthropic API error: " + response.status + " - " + errorData },
         { status: 502 }
       );
     }
@@ -70,9 +69,8 @@ export async function POST(request) {
 
     return Response.json(parsed);
   } catch (err) {
-    console.error("Server error:", err);
     return Response.json(
-      { error: "Internal server error" },
+      { error: "Server error: " + err.message },
       { status: 500 }
     );
   }

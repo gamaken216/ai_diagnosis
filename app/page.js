@@ -69,14 +69,13 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userProfile }),
       });
-      if (!response.ok) throw new Error("Diagnosis failed");
       const parsed = await response.json();
-      if (parsed.error) throw new Error(parsed.error);
+      if (!response.ok || parsed.error) throw new Error(parsed.error || "Diagnosis failed");
       setResult(parsed);
       setStep(4);
     } catch (err) {
       console.error(err);
-      setError("診断中にエラーが発生しました。もう一度お試しください。");
+      setError(err.message || "診断中にエラーが発生しました。もう一度お試しください。");
     } finally {
       setLoading(false);
     }
