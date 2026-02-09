@@ -27,6 +27,7 @@ const BUDGETS = [
 const ENVIRONMENTS = [
   { id: "google", label: "Google派", desc: "Gmail, Googleドキュメント, スプレッドシートなど" },
   { id: "microsoft", label: "Microsoft派", desc: "Outlook, Word, Excel, PowerPointなど" },
+  { id: "apple", label: "Apple / Mac派", desc: "iWork(Pages, Keynote), Apple純正アプリ中心" },
 ];
 
 export default function Home() {

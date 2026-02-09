@@ -31,7 +31,7 @@ export async function POST(request) {
 - 実在するサービスのみ提案する（Claude, ChatGPT, Gemini, Copilot, Perplexity, Midjourney, DALL-E, Canva, NotebookLM等）
 - 予算制約を厳守する（無料ならすべて無料プラン、月1000円以下なら合計がそれ以下）
 - スキルレベルに合わせる（初心者には簡単なものを、上級者にはAPI活用も）
-- Google派/Microsoft派の環境に合ったツール連携を優先する
+- Google派/Microsoft派/Apple派の環境に合ったツール連携を優先する
 - comboは2-5個程度にする
 - 日本語で回答する`;
 
