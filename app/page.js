@@ -126,9 +126,11 @@ export default function Home() {
             <div style={{ fontSize: 11, color: "#9990b8", marginTop: 2 }}>{p.desc}</div>
           </button>)}
         </div>
-        <div style={{ marginTop: 14 }}>
-          <input type="text" placeholder="その他の用途があれば入力..." value={otherPurpose} onChange={(e) => setOtherPurpose(e.target.value)}
-            style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#e8e6f0", fontSize: 13, outline: "none" }} />
+        <div style={{ marginTop: 18, background: "linear-gradient(135deg, rgba(167,139,250,0.12), rgba(129,140,248,0.08))", border: "1.5px solid rgba(167,139,250,0.35)", borderRadius: 14, padding: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#c4b5fd", marginBottom: 4 }}>💬 具体的な目的があればぜひお書きください！</div>
+          <div style={{ fontSize: 11, color: "#9990b8", marginBottom: 10 }}>例：「生成AIでWebアプリを作りたい」「ECサイトの業務を自動化したい」など、具体的に書くほどピッタリの提案ができます</div>
+          <textarea placeholder="具体的なやりたいことを自由にお書きください..." value={otherPurpose} onChange={(e) => setOtherPurpose(e.target.value)}
+            style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#e8e6f0", fontSize: 13, outline: "none", minHeight: 80, resize: "vertical", fontFamily: "inherit" }} />
         </div>
       </div>}
 
