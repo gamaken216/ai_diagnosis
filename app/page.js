@@ -19,15 +19,49 @@ const SKILLS = [
 ];
 
 const BUDGETS = [
-  { id: "free", label: "無料", desc: "お金はかけたくない" },
-  { id: "low", label: "月1,000円以下", desc: "少しなら課金OK" },
-  { id: "high", label: "月1,000円以上", desc: "良いツールにはしっかり投資" },
+  { id: "free", label: "無料", desc: "無料ツールのみで始めたい" },
+  { id: "1000", label: "月1,000円程度まで", desc: "最低限の投資で試したい" },
+  { id: "3000", label: "月3,000円程度まで", desc: "1つの有料ツールを使いたい" },
+  { id: "6000", label: "月6,000円程度まで", desc: "メインツール＋補助ツール" },
+  { id: "10000", label: "月10,000円程度まで", desc: "複数の有料ツールを活用したい" },
+  { id: "15000", label: "月15,000円程度まで", desc: "業務効率を本格的に上げたい" },
+  { id: "unlimited", label: "必要に応じて支払ってもよい", desc: "最適な環境を追求したい" },
 ];
 
-const ENVIRONMENTS = [
-  { id: "google", label: "Google派", desc: "Gmail, Googleドキュメント, スプレッドシートなど" },
-  { id: "microsoft", label: "Microsoft派", desc: "Outlook, Word, Excel, PowerPointなど" },
-  { id: "apple", label: "Apple / Mac派", desc: "iWork(Pages, Keynote), Apple純正アプリ中心" },
+const MACHINES = [
+  { id: "windows", label: "Windows", icon: "🪟" },
+  { id: "mac", label: "Mac", icon: "🍎" },
+  { id: "both", label: "両方使っている", icon: "💻" },
+];
+
+const APPS = [
+  { category: "文書・表計算", items: [
+    { id: "ms-word", label: "Microsoft Word" },
+    { id: "ms-excel", label: "Microsoft Excel" },
+    { id: "ms-powerpoint", label: "Microsoft PowerPoint" },
+    { id: "google-docs", label: "Google ドキュメント" },
+    { id: "google-sheets", label: "Google スプレッドシート" },
+    { id: "google-slides", label: "Google スライド" },
+  ]},
+  { category: "デザイン・クリエイティブ", items: [
+    { id: "adobe-photoshop", label: "Adobe Photoshop" },
+    { id: "adobe-illustrator", label: "Adobe Illustrator" },
+    { id: "adobe-premiere", label: "Adobe Premiere Pro" },
+    { id: "figma", label: "Figma" },
+    { id: "canva", label: "Canva" },
+  ]},
+  { category: "コミュニケーション", items: [
+    { id: "outlook", label: "Outlook" },
+    { id: "gmail", label: "Gmail" },
+    { id: "slack", label: "Slack" },
+    { id: "teams", label: "Microsoft Teams" },
+    { id: "zoom", label: "Zoom" },
+  ]},
+  { category: "開発・その他", items: [
+    { id: "vscode", label: "VS Code" },
+    { id: "notion", label: "Notion" },
+    { id: "github", label: "GitHub" },
+  ]},
 ];
 
 export default function Home() {
@@ -36,7 +70,8 @@ export default function Home() {
   const [otherPurpose, setOtherPurpose] = useState("");
   const [skill, setSkill] = useState(null);
   const [budget, setBudget] = useState(null);
-  const [env, setEnv] = useState([]);
+  const [machine, setMachine] = useState(null);
+  const [selectedApps, setSelectedApps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -45,83 +80,63 @@ export default function Home() {
   const [followUp, setFollowUp] = useState(null);
   const [followUpLoading, setFollowUpLoading] = useState(false);
 
-  const togglePurpose = (id) => {
-    setSelectedPurposes((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
-    );
-  };
+  const togglePurpose = (id) => setSelectedPurposes((prev) => prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]);
+  const toggleApp = (id) => setSelectedApps((prev) => prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]);
 
-  const toggleEnv = (id) => {
-    setEnv((prev) =>
-      prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]
-    );
-  };
-
+  const totalSteps = 5;
   const canProceed = () => {
     if (step === 0) return selectedPurposes.length > 0 || otherPurpose.trim() !== "";
     if (step === 1) return skill !== null;
     if (step === 2) return budget !== null;
-    if (step === 3) return env.length > 0;
+    if (step === 3) return machine !== null;
+    if (step === 4) return selectedApps.length > 0;
     return false;
   };
 
   const handleSubmit = async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     const purposeLabels = selectedPurposes.map((id) => PURPOSES.find((p) => p.id === id)?.label);
     const skillLabel = SKILLS.find((s) => s.id === skill)?.label;
     const budgetLabel = BUDGETS.find((b) => b.id === budget)?.label;
-    const envLabels = env.map((id) => ENVIRONMENTS.find((e) => e.id === id)?.label);
-    const userProfile = `【ユーザーの回答】\n・目的: ${purposeLabels.join("、")}${otherPurpose ? `、その他: ${otherPurpose}` : ""}\n・スキルレベル: ${skillLabel}\n・予算: ${budgetLabel}\n・利用環境: ${envLabels.join("、")}`;
+    const machineLabel = MACHINES.find((m) => m.id === machine)?.label;
+    const appLabels = selectedApps.map((id) => APPS.flatMap(c => c.items).find((a) => a.id === id)?.label);
+    const userProfile = `【ユーザーの回答】\n・目的: ${purposeLabels.join("、")}${otherPurpose ? `、その他: ${otherPurpose}` : ""}\n・スキルレベル: ${skillLabel}\n・予算: ${budgetLabel}\n・使用マシン: ${machineLabel}\n・使用アプリ: ${appLabels.join("、")}`;
     try {
-      const response = await fetch("/api/diagnose", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userProfile }),
-      });
+      const response = await fetch("/api/diagnose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userProfile }) });
       const parsed = await response.json();
       if (!response.ok || parsed.error) throw new Error(parsed.error || "Diagnosis failed");
-      setResult(parsed);
-      setStep(4);
+      setResult(parsed); setStep(5);
     } catch (err) {
       console.error(err);
       setError(err.message || "診断中にエラーが発生しました。もう一度お試しください。");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleFollowUp = async () => {
-    setFollowUpLoading(true);
-    setError(null);
+    setFollowUpLoading(true); setError(null);
     const purposeLabels = selectedPurposes.map((id) => PURPOSES.find((p) => p.id === id)?.label);
     const skillLabel = SKILLS.find((s) => s.id === skill)?.label;
     const budgetLabel = BUDGETS.find((b) => b.id === budget)?.label;
-    const envLabels = env.map((id) => ENVIRONMENTS.find((e) => e.id === id)?.label);
-    const context = `【元の診断条件】\n・目的: ${purposeLabels.join("、")}${otherPurpose ? `、その他: ${otherPurpose}` : ""}\n・スキルレベル: ${skillLabel}\n・予算: ${budgetLabel}\n・利用環境: ${envLabels.join("、")}\n\n【前回の提案】\nメインツール: ${result.mainTool}\n組み合わせ: ${result.combo?.map(c => c.tool + "(" + c.use + ")").join("、")}\n\n【ユーザーの評価】${rating}/5\n【ユーザーの疑問・要望】\n${feedback}`;
+    const machineLabel = MACHINES.find((m) => m.id === machine)?.label;
+    const appLabels = selectedApps.map((id) => APPS.flatMap(c => c.items).find((a) => a.id === id)?.label);
+    const context = `【元の診断条件】\n・目的: ${purposeLabels.join("、")}${otherPurpose ? `、その他: ${otherPurpose}` : ""}\n・スキルレベル: ${skillLabel}\n・予算: ${budgetLabel}\n・使用マシン: ${machineLabel}\n・使用アプリ: ${appLabels.join("、")}\n\n【前回の提案】\nメインツール: ${result.mainTool}\n組み合わせ: ${result.combo?.map(c => c.tool + "(" + c.use + ")").join("、")}\n\n【ユーザーの評価】${rating}/5\n【ユーザーの疑問・要望】\n${feedback}`;
     try {
-      const response = await fetch("/api/diagnose", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userProfile: context, isFollowUp: true }),
-      });
+      const response = await fetch("/api/diagnose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userProfile: context, isFollowUp: true }) });
       const parsed = await response.json();
       if (!response.ok || parsed.error) throw new Error(parsed.error || "Follow-up failed");
       setFollowUp(parsed);
     } catch (err) {
       setError(err.message || "追加質問中にエラーが発生しました。");
-    } finally {
-      setFollowUpLoading(false);
-    }
+    } finally { setFollowUpLoading(false); }
   };
 
   const reset = () => {
     setStep(0); setSelectedPurposes([]); setOtherPurpose("");
-    setSkill(null); setBudget(null); setEnv([]); setResult(null); setError(null);
-    setRating(null); setFeedback(""); setFollowUp(null); setFollowUpLoading(false);
+    setSkill(null); setBudget(null); setMachine(null); setSelectedApps([]);
+    setResult(null); setError(null); setRating(null); setFeedback(""); setFollowUp(null); setFollowUpLoading(false);
   };
 
-  const progress = step < 4 ? ((step + 1) / 4) * 100 : 100;
+  const progress = step < totalSteps ? ((step + 1) / totalSteps) * 100 : 100;
   const S = {
     page: { minHeight: "100vh", background: "linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 40%, #2d1b4e 70%, #1a0a2e 100%)", fontFamily: "'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif", color: "#e8e6f0", padding: "20px", display: "flex", justifyContent: "center" },
     wrap: { maxWidth: 680, width: "100%" },
@@ -131,8 +146,10 @@ export default function Home() {
     q: { fontSize: 18, fontWeight: 700, marginBottom: 4, color: "#ddd6fe" },
     hint: { fontSize: 12, color: "#8880a8", marginBottom: 16 },
     secLbl: { fontSize: 11, color: "#a78bfa", fontWeight: 600, marginBottom: 12, letterSpacing: 2 },
+    catLbl: { fontSize: 12, fontWeight: 700, color: "#a78bfa", marginBottom: 8, marginTop: 14 },
   };
   const card = (sel) => ({ background: sel ? "linear-gradient(135deg, rgba(167,139,250,0.25), rgba(129,140,248,0.2))" : "rgba(255,255,255,0.04)", border: sel ? "1.5px solid rgba(167,139,250,0.6)" : "1.5px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "14px 18px", cursor: "pointer", textAlign: "left", transition: "all 0.2s", color: "#e8e6f0" });
+  const chipStyle = (sel) => ({ display: "inline-flex", alignItems: "center", padding: "8px 16px", borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 0.2s", background: sel ? "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(129,140,248,0.25))" : "rgba(255,255,255,0.04)", border: sel ? "1.5px solid rgba(167,139,250,0.6)" : "1.5px solid rgba(255,255,255,0.1)", color: sel ? "#ddd6fe" : "#9990b8" });
   const nextBtn = (ok) => ({ padding: "10px 28px", background: ok ? "linear-gradient(135deg, #a78bfa, #818cf8)" : "rgba(255,255,255,0.06)", border: "none", borderRadius: 10, color: ok ? "#fff" : "#666", fontSize: 14, fontWeight: 600, cursor: ok ? "pointer" : "not-allowed", opacity: ok ? 1 : 0.4 });
   const rsec = { background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20, marginBottom: 14 };
 
@@ -141,11 +158,11 @@ export default function Home() {
       <div style={{ textAlign: "center", marginBottom: 32, paddingTop: 20 }}>
         <div style={S.badge}>AI Tool Diagnostic</div>
         <h1 style={S.h1}>あなたにピッタリの<br/>生成AIツール診断</h1>
-        <p style={S.sub}>4つの質問に答えるだけで、最適なAIツールの組み合わせがわかります</p>
+        <p style={S.sub}>5つの質問に答えるだけで、最適なAIツールの組み合わせがわかります</p>
       </div>
 
-      {step < 4 && <div style={{ marginBottom: 28 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#8880a8", marginBottom: 6 }}><span>Q{step + 1} / 4</span><span>{Math.round(progress)}%</span></div>
+      {step < totalSteps && <div style={{ marginBottom: 28 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#8880a8", marginBottom: 6 }}><span>Q{step + 1} / {totalSteps}</span><span>{Math.round(progress)}%</span></div>
         <div style={{ height: 3, background: "rgba(167,139,250,0.15)", borderRadius: 2, overflow: "hidden" }}>
           <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, #a78bfa, #818cf8)", borderRadius: 2, transition: "width 0.4s ease" }} />
         </div>
@@ -183,23 +200,43 @@ export default function Home() {
       {step === 2 && <div>
         <h2 style={S.q}>Q3. 月額の予算は？</h2>
         <p style={S.hint}>AIツールに使える毎月の金額を選んでください。</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {BUDGETS.map((b) => <button key={b.id} onClick={() => setBudget(b.id)} style={card(budget === b.id)}>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>{b.label}</div>
-            <div style={{ fontSize: 12, color: "#9990b8", marginTop: 3 }}>{b.desc}</div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>{b.label}</div>
+            <div style={{ fontSize: 11, color: "#9990b8", marginTop: 2 }}>{b.desc}</div>
           </button>)}
         </div>
       </div>}
 
       {step === 3 && <div>
-        <h2 style={S.q}>Q4. 普段の作業環境は？</h2>
-        <p style={S.hint}>複数選択OK。使っているものをすべて選んでください。</p>
+        <h2 style={S.q}>Q4. 使用しているマシンは？</h2>
+        <p style={S.hint}>メインで使っているものを選んでください。</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {ENVIRONMENTS.map((e) => <button key={e.id} onClick={() => toggleEnv(e.id)} style={card(env.includes(e.id))}>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>{e.label}</div>
-            <div style={{ fontSize: 12, color: "#9990b8", marginTop: 3 }}>{e.desc}</div>
+          {MACHINES.map((m) => <button key={m.id} onClick={() => setMachine(m.id)} style={card(machine === m.id)}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 22 }}>{m.icon}</span>
+              <span style={{ fontSize: 15, fontWeight: 600 }}>{m.label}</span>
+            </div>
           </button>)}
         </div>
+      </div>}
+
+      {step === 4 && <div>
+        <h2 style={S.q}>Q5. 普段使っているアプリは？</h2>
+        <p style={S.hint}>複数選択OK。使っているものをすべて選んでください。</p>
+        {APPS.map((cat) => (
+          <div key={cat.category}>
+            <div style={S.catLbl}>{cat.category}</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
+              {cat.items.map((app) => (
+                <button key={app.id} onClick={() => toggleApp(app.id)} style={chipStyle(selectedApps.includes(app.id))}>
+                  {selectedApps.includes(app.id) && <span style={{ marginRight: 4 }}>✓</span>}
+                  {app.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>}
 
       {loading && <div style={{ textAlign: "center", padding: "60px 0" }}>
@@ -214,7 +251,7 @@ export default function Home() {
         <button onClick={() => { setError(null); handleSubmit(); }} style={{ marginTop: 12, padding: "8px 20px", background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.4)", borderRadius: 8, color: "#fca5a5", cursor: "pointer", fontSize: 13 }}>リトライ</button>
       </div>}
 
-      {step === 4 && result && !loading && <div>
+      {step === 5 && result && !loading && <div>
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ fontSize: 11, letterSpacing: 4, color: "#a78bfa", marginBottom: 6, fontWeight: 600 }}>YOUR BEST MATCH</div>
           <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: "#ddd6fe" }}>{result.title}</h2>
@@ -243,7 +280,6 @@ export default function Home() {
           <p style={{ fontSize: 12, color: "#8880a8", lineHeight: 1.6, margin: 0 }}>{result.alternative}</p>
         </div>
 
-        {/* Feedback Section */}
         <div style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.1), rgba(129,140,248,0.06))", border: "1.5px solid rgba(167,139,250,0.25)", borderRadius: 16, padding: 20, marginBottom: 20 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#c4b5fd", marginBottom: 12 }}>この診断結果に納得しましたか？</div>
           <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
@@ -273,25 +309,20 @@ export default function Home() {
           )}
 
           {rating !== null && rating >= 4 && !followUp && (
-            <div style={{ marginTop: 8, fontSize: 13, color: "#a78bfa" }}>
-              ✨ ありがとうございます！この組み合わせでぜひ始めてみてください。
-            </div>
+            <div style={{ marginTop: 8, fontSize: 13, color: "#a78bfa" }}>✨ ありがとうございます！この組み合わせでぜひ始めてみてください。</div>
           )}
         </div>
 
-        {/* Follow-up Result */}
         {followUp && (
           <div style={{ background: "linear-gradient(135deg, rgba(52,211,153,0.1), rgba(16,185,129,0.06))", border: "1.5px solid rgba(52,211,153,0.3)", borderRadius: 16, padding: 20, marginBottom: 20 }}>
             <div style={{ fontSize: 11, letterSpacing: 3, color: "#34d399", fontWeight: 600, marginBottom: 10 }}>💬 AIからの回答</div>
             <p style={{ fontSize: 13, color: "#d1fae5", lineHeight: 1.8, margin: "0 0 16px 0", whiteSpace: "pre-wrap" }}>{followUp.answer}</p>
-
             {followUp.comparison && (
               <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: 14, marginBottom: 14 }}>
                 <div style={{ fontSize: 11, color: "#34d399", fontWeight: 600, marginBottom: 6, letterSpacing: 2 }}>🔍 ツール比較</div>
                 <p style={{ fontSize: 12, color: "#a7f3d0", lineHeight: 1.7, margin: 0 }}>{followUp.comparison}</p>
               </div>
             )}
-
             {followUp.revisedRecommendation && (
               <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: 14 }}>
                 <div style={{ fontSize: 11, color: "#34d399", fontWeight: 600, marginBottom: 6, letterSpacing: 2 }}>✅ 修正後のおすすめ</div>
@@ -310,15 +341,15 @@ export default function Home() {
         </div>
       </div>}
 
-      {step < 4 && !loading && !error && <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24, gap: 12 }}>
+      {step < totalSteps && !loading && !error && <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24, gap: 12 }}>
         <button onClick={() => setStep(Math.max(0, step - 1))} style={{ padding: "10px 20px", background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#9990b8", fontSize: 13, cursor: "pointer", visibility: step === 0 ? "hidden" : "visible" }}>← 戻る</button>
-        <button onClick={() => step === 3 ? handleSubmit() : setStep(step + 1)} disabled={!canProceed()} style={nextBtn(canProceed())}>
-          {step === 3 ? "診断する ✨" : "次へ →"}
+        <button onClick={() => step === totalSteps - 1 ? handleSubmit() : setStep(step + 1)} disabled={!canProceed()} style={nextBtn(canProceed())}>
+          {step === totalSteps - 1 ? "診断する ✨" : "次へ →"}
         </button>
       </div>}
 
       <div style={{ textAlign: "center", marginTop: 40, paddingBottom: 20, fontSize: 11, color: "#5a5478" }}>
-        Powered by Claude API — AI Tool Diagnostic v1.0
+        Powered by Claude API — AI Tool Diagnostic v2.0
       </div>
     </div></div>
   );
