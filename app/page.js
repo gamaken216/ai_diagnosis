@@ -40,6 +40,10 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [rating, setRating] = useState(null);
+  const [feedback, setFeedback] = useState("");
+  const [followUp, setFollowUp] = useState(null);
+  const [followUpLoading, setFollowUpLoading] = useState(false);
 
   const togglePurpose = (id) => {
     setSelectedPurposes((prev) =>
@@ -87,9 +91,34 @@ export default function Home() {
     }
   };
 
+  const handleFollowUp = async () => {
+    setFollowUpLoading(true);
+    setError(null);
+    const purposeLabels = selectedPurposes.map((id) => PURPOSES.find((p) => p.id === id)?.label);
+    const skillLabel = SKILLS.find((s) => s.id === skill)?.label;
+    const budgetLabel = BUDGETS.find((b) => b.id === budget)?.label;
+    const envLabels = env.map((id) => ENVIRONMENTS.find((e) => e.id === id)?.label);
+    const context = `【元の診断条件】\n・目的: ${purposeLabels.join("、")}${otherPurpose ? `、その他: ${otherPurpose}` : ""}\n・スキルレベル: ${skillLabel}\n・予算: ${budgetLabel}\n・利用環境: ${envLabels.join("、")}\n\n【前回の提案】\nメインツール: ${result.mainTool}\n組み合わせ: ${result.combo?.map(c => c.tool + "(" + c.use + ")").join("、")}\n\n【ユーザーの評価】${rating}/5\n【ユーザーの疑問・要望】\n${feedback}`;
+    try {
+      const response = await fetch("/api/diagnose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userProfile: context, isFollowUp: true }),
+      });
+      const parsed = await response.json();
+      if (!response.ok || parsed.error) throw new Error(parsed.error || "Follow-up failed");
+      setFollowUp(parsed);
+    } catch (err) {
+      setError(err.message || "追加質問中にエラーが発生しました。");
+    } finally {
+      setFollowUpLoading(false);
+    }
+  };
+
   const reset = () => {
     setStep(0); setSelectedPurposes([]); setOtherPurpose("");
     setSkill(null); setBudget(null); setEnv([]); setResult(null); setError(null);
+    setRating(null); setFeedback(""); setFollowUp(null); setFollowUpLoading(false);
   };
 
   const progress = step < 4 ? ((step + 1) / 4) * 100 : 100;
@@ -213,6 +242,69 @@ export default function Home() {
           <div style={{ fontSize: 12, fontWeight: 600, color: "#9990b8", marginBottom: 6 }}>🔄 {result.alternativeTitle}</div>
           <p style={{ fontSize: 12, color: "#8880a8", lineHeight: 1.6, margin: 0 }}>{result.alternative}</p>
         </div>
+
+        {/* Feedback Section */}
+        <div style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.1), rgba(129,140,248,0.06))", border: "1.5px solid rgba(167,139,250,0.25)", borderRadius: 16, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#c4b5fd", marginBottom: 12 }}>この診断結果に納得しましたか？</div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            {[1,2,3,4,5].map((n) => (
+              <button key={n} onClick={() => setRating(n)} style={{
+                width: 44, height: 44, borderRadius: 10, fontSize: 16, fontWeight: 700, cursor: "pointer",
+                background: rating === n ? "linear-gradient(135deg, #a78bfa, #818cf8)" : "rgba(255,255,255,0.06)",
+                border: rating === n ? "1.5px solid rgba(167,139,250,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
+                color: rating === n ? "#fff" : "#9990b8", transition: "all 0.2s",
+              }}>{n}</button>
+            ))}
+            <span style={{ fontSize: 11, color: "#8880a8", alignSelf: "center", marginLeft: 4 }}>1=不満 → 5=満足</span>
+          </div>
+
+          {rating !== null && rating <= 3 && !followUp && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontSize: 12, color: "#b8b0d0", marginBottom: 8 }}>
+                {rating <= 2 ? "💬 どんな点が気になりましたか？他に気になるツールがあればぜひ教えてください。" : "💬 もっと良い提案ができるかもしれません。気になる点を教えてください。"}
+              </div>
+              <textarea placeholder="例：Gammaの方がプレゼン作成には向いているのでは？ / もっと簡単なツールはない？" value={feedback} onChange={(e) => setFeedback(e.target.value)}
+                style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#e8e6f0", fontSize: 13, outline: "none", minHeight: 70, resize: "vertical", fontFamily: "inherit" }} />
+              <button onClick={handleFollowUp} disabled={!feedback.trim() || followUpLoading}
+                style={{ marginTop: 10, padding: "10px 24px", background: feedback.trim() ? "linear-gradient(135deg, #a78bfa, #818cf8)" : "rgba(255,255,255,0.06)", border: "none", borderRadius: 10, color: feedback.trim() ? "#fff" : "#666", fontSize: 13, fontWeight: 600, cursor: feedback.trim() ? "pointer" : "not-allowed", opacity: feedback.trim() ? 1 : 0.4 }}>
+                {followUpLoading ? "分析中..." : "AIに質問する 💬"}
+              </button>
+            </div>
+          )}
+
+          {rating !== null && rating >= 4 && !followUp && (
+            <div style={{ marginTop: 8, fontSize: 13, color: "#a78bfa" }}>
+              ✨ ありがとうございます！この組み合わせでぜひ始めてみてください。
+            </div>
+          )}
+        </div>
+
+        {/* Follow-up Result */}
+        {followUp && (
+          <div style={{ background: "linear-gradient(135deg, rgba(52,211,153,0.1), rgba(16,185,129,0.06))", border: "1.5px solid rgba(52,211,153,0.3)", borderRadius: 16, padding: 20, marginBottom: 20 }}>
+            <div style={{ fontSize: 11, letterSpacing: 3, color: "#34d399", fontWeight: 600, marginBottom: 10 }}>💬 AIからの回答</div>
+            <p style={{ fontSize: 13, color: "#d1fae5", lineHeight: 1.8, margin: "0 0 16px 0", whiteSpace: "pre-wrap" }}>{followUp.answer}</p>
+
+            {followUp.comparison && (
+              <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: 14, marginBottom: 14 }}>
+                <div style={{ fontSize: 11, color: "#34d399", fontWeight: 600, marginBottom: 6, letterSpacing: 2 }}>🔍 ツール比較</div>
+                <p style={{ fontSize: 12, color: "#a7f3d0", lineHeight: 1.7, margin: 0 }}>{followUp.comparison}</p>
+              </div>
+            )}
+
+            {followUp.revisedRecommendation && (
+              <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: 14 }}>
+                <div style={{ fontSize: 11, color: "#34d399", fontWeight: 600, marginBottom: 6, letterSpacing: 2 }}>✅ 修正後のおすすめ</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#e8e6f0", marginBottom: 4 }}>{followUp.revisedRecommendation.mainTool}</div>
+                <p style={{ fontSize: 12, color: "#a7f3d0", lineHeight: 1.6, margin: "0 0 8px 0" }}>{followUp.revisedRecommendation.reason}</p>
+                {followUp.revisedRecommendation.combo?.map((c, i) => (
+                  <div key={i} style={{ fontSize: 12, color: "#d1fae5", padding: "3px 0" }}>• {c.tool} → {c.use}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <div style={{ textAlign: "center" }}>
           <button onClick={reset} style={{ padding: "12px 32px", background: "linear-gradient(135deg, rgba(167,139,250,0.2), rgba(129,140,248,0.15))", border: "1.5px solid rgba(167,139,250,0.4)", borderRadius: 10, color: "#ddd6fe", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>もう一度診断する</button>
         </div>

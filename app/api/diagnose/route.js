@@ -3,15 +3,42 @@ export async function POST(request) {
 
   if (!apiKey) {
     return Response.json(
-      { error: "API key not configured. Please set ANTHROPIC_API_KEY in Vercel environment variables." },
+      { error: "API key not configured." },
       { status: 500 }
     );
   }
 
   try {
-    const { userProfile } = await request.json();
+    const { userProfile, isFollowUp } = await request.json();
 
-    const systemPrompt = `あなたは生成AIツールの専門アドバイザーです。ユーザーの回答に基づいて、最適な生成AIツールとサービスの組み合わせを提案してください。
+    let systemPrompt;
+
+    if (isFollowUp) {
+      systemPrompt = `あなたは生成AIツールの専門アドバイザーです。
+前回の診断結果に対してユーザーが疑問や不満を持っています。
+ユーザーの疑問に丁寧に答え、必要であれば代替案を提示してください。
+
+以下のJSON形式のみで回答してください。他のテキストは一切含めないでください：
+{
+  "answer": "ユーザーの疑問への回答（200-400文字程度。具体的なツール名や理由を含める）",
+  "revisedRecommendation": {
+    "mainTool": "修正後のメインツール名（変更なしなら元のまま）",
+    "reason": "なぜこのツールを推奨するか（2-3文）",
+    "combo": [
+      {"tool": "ツール名", "use": "用途"}
+    ]
+  },
+  "comparison": "ユーザーが言及したツールとの比較（あれば。なければ空文字）"
+}
+
+ルール：
+- ユーザーの疑問に正面から答える
+- 具体的なツール名が挙がっていれば、それとの比較を必ず行う
+- 元の提案が最適なら理由を補足して維持、より良い選択肢があれば変更を提案
+- 予算やスキルレベルの制約は維持する
+- 日本語で回答する`;
+    } else {
+      systemPrompt = `あなたは生成AIツールの専門アドバイザーです。ユーザーの回答に基づいて、最適な生成AIツールとサービスの組み合わせを提案してください。
 
 以下のJSON形式のみで回答してください。他のテキストは一切含めないでください：
 {
@@ -34,6 +61,7 @@ export async function POST(request) {
 - Google派/Microsoft派/Apple派の環境に合ったツール連携を優先する
 - comboは2-5個程度にする
 - 日本語で回答する`;
+    }
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
