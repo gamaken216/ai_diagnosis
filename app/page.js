@@ -36,7 +36,7 @@ export default function Home() {
   const [otherPurpose, setOtherPurpose] = useState("");
   const [skill, setSkill] = useState(null);
   const [budget, setBudget] = useState(null);
-  const [env, setEnv] = useState(null);
+  const [env, setEnv] = useState([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -47,11 +47,17 @@ export default function Home() {
     );
   };
 
+  const toggleEnv = (id) => {
+    setEnv((prev) =>
+      prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]
+    );
+  };
+
   const canProceed = () => {
     if (step === 0) return selectedPurposes.length > 0 || otherPurpose.trim() !== "";
     if (step === 1) return skill !== null;
     if (step === 2) return budget !== null;
-    if (step === 3) return env !== null;
+    if (step === 3) return env.length > 0;
     return false;
   };
 
@@ -61,8 +67,8 @@ export default function Home() {
     const purposeLabels = selectedPurposes.map((id) => PURPOSES.find((p) => p.id === id)?.label);
     const skillLabel = SKILLS.find((s) => s.id === skill)?.label;
     const budgetLabel = BUDGETS.find((b) => b.id === budget)?.label;
-    const envLabel = ENVIRONMENTS.find((e) => e.id === env)?.label;
-    const userProfile = `【ユーザーの回答】\n・目的: ${purposeLabels.join("、")}${otherPurpose ? `、その他: ${otherPurpose}` : ""}\n・スキルレベル: ${skillLabel}\n・予算: ${budgetLabel}\n・利用環境: ${envLabel}`;
+    const envLabels = env.map((id) => ENVIRONMENTS.find((e) => e.id === id)?.label);
+    const userProfile = `【ユーザーの回答】\n・目的: ${purposeLabels.join("、")}${otherPurpose ? `、その他: ${otherPurpose}` : ""}\n・スキルレベル: ${skillLabel}\n・予算: ${budgetLabel}\n・利用環境: ${envLabels.join("、")}`;
     try {
       const response = await fetch("/api/diagnose", {
         method: "POST",
@@ -83,7 +89,7 @@ export default function Home() {
 
   const reset = () => {
     setStep(0); setSelectedPurposes([]); setOtherPurpose("");
-    setSkill(null); setBudget(null); setEnv(null); setResult(null); setError(null);
+    setSkill(null); setBudget(null); setEnv([]); setResult(null); setError(null);
   };
 
   const progress = step < 4 ? ((step + 1) / 4) * 100 : 100;
@@ -158,9 +164,9 @@ export default function Home() {
 
       {step === 3 && <div>
         <h2 style={S.q}>Q4. 普段の作業環境は？</h2>
-        <p style={S.hint}>メインで使っているサービスに近い方を選んでください。</p>
+        <p style={S.hint}>複数選択OK。使っているものをすべて選んでください。</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {ENVIRONMENTS.map((e) => <button key={e.id} onClick={() => setEnv(e.id)} style={card(env === e.id)}>
+          {ENVIRONMENTS.map((e) => <button key={e.id} onClick={() => toggleEnv(e.id)} style={card(env.includes(e.id))}>
             <div style={{ fontSize: 15, fontWeight: 600 }}>{e.label}</div>
             <div style={{ fontSize: 12, color: "#9990b8", marginTop: 3 }}>{e.desc}</div>
           </button>)}
