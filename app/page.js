@@ -107,7 +107,6 @@ export default function Home() {
       if (!response.ok || parsed.error) throw new Error(parsed.error || "Diagnosis failed");
       setResult(parsed); setStep(5);
     } catch (err) {
-      console.error(err);
       setError(err.message || "診断中にエラーが発生しました。もう一度お試しください。");
     } finally { setLoading(false); }
   };
